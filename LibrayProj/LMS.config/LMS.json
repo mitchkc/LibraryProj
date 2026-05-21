@@ -1,0 +1,34 @@
+{
+    "$schema": "http://json.schemastore.org/template",
+    "author": "a.mccaughey@gmail.com",
+    "classifications": [ "Web","MVC","Api" ],
+    "name": "Termon Base Template",
+    "identity": "base.termoncs.com",   
+    "shortName": "termonbase",           
+    "tags": {
+        "language": "C#",
+        "type": "item"                  
+    },
+    "sourceName": "Template",      
+    "preferNameDirectory" : true,
+    "primaryOutputs": [
+        {
+            "path": "Template.Data\\Template.Data.csproj"
+        },
+        {
+            "path": "Template.Test\\Template.Test.csproj"
+        },
+        {
+            "path": "Template.Web\\Template.Web.csproj"
+        }
+    ],
+    "sources": [
+        {
+          "modifiers": [
+            {
+                "exclude": ["**/[Bb]in/**", "**/[Oo]bj/**", ".template.config/**/*", "**/*.lock.json", "**/.git/**", "**/.DS_Store/**", "**/*.db/**", "**/.vscode/**"]
+            }
+          ]
+        }
+      ]
+}
