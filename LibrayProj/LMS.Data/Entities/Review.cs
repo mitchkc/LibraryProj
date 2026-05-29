@@ -5,7 +5,7 @@ namespace LMS.Data.Entities;
 public class Review
 {     
     [Key]
-    public int RId { get; set; }
+    public int RevId { get; set; }
     public int BookId { get; set; } // foreign key
     public int Userid { get; set; }
     public Book Book { get; set; }

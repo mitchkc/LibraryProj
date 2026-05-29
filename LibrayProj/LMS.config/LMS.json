@@ -1,32 +1,32 @@
 {
-    "$schema": "http://json.schemastore.org/template",
+    "$schema": "http://json.schemastore.org/LMS",
     "author": "a.mccaughey@gmail.com",
     "classifications": [ "Web","MVC","Api" ],
-    "name": "Termon Base Template",
+    "name": "Termon Base LMS",
     "identity": "base.termoncs.com",   
     "shortName": "termonbase",           
     "tags": {
         "language": "C#",
         "type": "item"                  
     },
-    "sourceName": "Template",      
+    "sourceName": "LMS",      
     "preferNameDirectory" : true,
     "primaryOutputs": [
         {
-            "path": "Template.Data\\Template.Data.csproj"
+            "path": "LMS.Data\\LMS.Data.csproj"
         },
         {
-            "path": "Template.Test\\Template.Test.csproj"
+            "path": "LMS.Test\\LMS.Test.csproj"
         },
         {
-            "path": "Template.Web\\Template.Web.csproj"
+            "path": "LMS.Web\\LMS.Web.csproj"
         }
     ],
     "sources": [
         {
           "modifiers": [
             {
-                "exclude": ["**/[Bb]in/**", "**/[Oo]bj/**", ".template.config/**/*", "**/*.lock.json", "**/.git/**", "**/.DS_Store/**", "**/*.db/**", "**/.vscode/**"]
+                "exclude": ["**/[Bb]in/**", "**/[Oo]bj/**", ".LMS.config/**/*", "**/*.lock.json", "**/.git/**", "**/.DS_Store/**", "**/*.db/**", "**/.vscode/**"]
             }
           ]
         }

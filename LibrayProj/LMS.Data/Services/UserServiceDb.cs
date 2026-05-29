@@ -4,6 +4,7 @@ using LMS.Data.Services;
 using LMS.Data.Security;
 using LMS.Data.Repositories;
 using Microsoft.Extensions.Logging;
+using System.Data;
 
 namespace LMS.Data.Services
 {
@@ -30,17 +31,19 @@ namespace LMS.Data.Services
         }
 
         // retrieve paged list of users
-        public Paged<User> GetUsers(int page = 1, int size = 10, string orderBy = "id", string direction = "asc")
+        public Paged<User> GetUsers(int page = 1, int size = 10, string orderBy = "uid", string direction = "asc")
         {          
             var query = (orderBy.ToLower(),direction.ToLower()) switch
             {
-                ("id","asc")     => ctx.Users.OrderBy(r => r.Id),
-                ("id","desc")    => ctx.Users.OrderByDescending(r => r.Id),
-                ("name","asc")   => ctx.Users.OrderBy(r => r.Name),
-                ("name","desc")  => ctx.Users.OrderByDescending(r => r.Name),
-                ("email","asc")  => ctx.Users.OrderBy(r => r.Email),
-                ("email","desc") => ctx.Users.OrderByDescending(r => r.Email),
-                _                => ctx.Users.OrderBy(r => r.Id)
+                ("id","asc")     => ctx.Users.OrderBy(r => r.UId),
+                ("id","desc")    => ctx.Users.OrderByDescending(r => r.UId),
+                ("forename","asc")   => ctx.Users.OrderBy(r => r.Forename),
+                ("forename","desc")  => ctx.Users.OrderByDescending(r => r.Forename),
+                ("surname","asc") => ctx.Users.OrderBy(r => r.Surname),
+                ("surname","desc") => ctx.Users.OrderByDescending(r => r.Surname),
+                ("role","asc")  => ctx.Users.OrderBy(r => r.Role),
+                ("role","desc") => ctx.Users.OrderByDescending(r => r.Role),
+                _                => ctx.Users.OrderBy(r => r.UId)
             };
 
             return query.ToPaged(page,size,orderBy,direction);
@@ -49,11 +52,11 @@ namespace LMS.Data.Services
         // Retrive User by Id 
         public User GetUser(int id)
         {
-            return ctx.Users.FirstOrDefault(s => s.Id == id);
+            return ctx.Users.FirstOrDefault(s => s.UId == id);
         }
 
         // Add a new User checking a User with same email does not exist
-        public User AddUser(string name, string email, string password, Role role)
+        public User AddUser(string forename, string surname, string password, Role role, DateOnly dateOfRegistration, string email, string address, string gender, DateTime dob, string contactNumber)
         {     
             var existing = GetUserByEmail(email);
             if (existing != null)
@@ -63,10 +66,16 @@ namespace LMS.Data.Services
 
             var user = new User
             {            
-                Name = name,
+                Forename = forename,
+                Surname = surname,
+                Password = Hasher.CalculateHash(password), // can hash if required
+                Role = role,
+                DateOfRegistration = dateOfRegistration,
                 Email = email,
-                Password = Hasher.CalculateHash(password), // can hash if required 
-                Role = role              
+                Address = address,
+                Gender = gender,
+                DoB = dob,
+                ContactNumber = contactNumber            
             };
             ctx.Users.Add(user);
             ctx.SaveChanges();
@@ -90,21 +99,27 @@ namespace LMS.Data.Services
         public User UpdateUser(User updated)
         {
             // verify the User exists
-            var User = GetUser(updated.Id);
+            var User = GetUser(updated.UId);
             if (User == null)
             {
                 return null;
             }
             // verify email address is registered or available to this user
-            if (!IsEmailAvailable(updated.Email, updated.Id))
+            if (!IsEmailAvailable(updated.Email, updated.UId))
             {
                 return null;
             }
             // update the details of the User retrieved and save
-            User.Name = updated.Name;
+            User.Forename = updated.Forename;
+            User.Surname = updated.Surname;
+            User.Password = Hasher.CalculateHash(updated.Password);
+            User.Role = updated.Role;
+            User.DateOfRegistration = updated.DateOfRegistration;
             User.Email = updated.Email;
-            User.Password = Hasher.CalculateHash(updated.Password);  
-            User.Role = updated.Role; 
+            User.Address = updated.Address;
+            User.Gender = updated.Gender;
+            User.DoB = updated.DoB;
+            User.ContactNumber = updated.ContactNumber;
 
             ctx.SaveChanges();          
             return User;
@@ -119,7 +134,7 @@ namespace LMS.Data.Services
         // Verify if email is available or registered to specified user
         public bool IsEmailAvailable(string email, int userId)
         {
-            return ctx.Users.FirstOrDefault(u => u.Email == email && u.Id != userId) == null;
+            return ctx.Users.FirstOrDefault(u => u.Email == email && u.UId != userId) == null;
         }
 
         public IList<User> GetUsersQuery(Func<User,bool> q)
