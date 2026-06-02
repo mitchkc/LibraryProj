@@ -23,7 +23,7 @@ public class BookServiceDb : IBookService
     
     // implement IBookService methods here
 
-    public List<Book> GetBooks(string orderBy="id", string direction="asc")
+    public async Task<List<Book>> GetBooksAsync(string orderBy="id", string direction="asc")
     {
         var results = (orderBy.ToLower(), direction.ToLower()) switch
         {
@@ -44,15 +44,15 @@ public class BookServiceDb : IBookService
             _ => db.Books.OrderBy(r => r.Name)
         };
 
-        return results.ToList();
+        return await results.ToListAsync();
     }
 
-    public Paged<Book> GetBooks(int page=1, int pageSize = 10, string orderBy="BookId", string direction="asc")
+    public async Task<Paged<Book>> GetBooksAsync(int page=1, int pageSize = 10, string orderBy="BookId", string direction="asc")
     {
         var query =(orderBy.ToLower(), direction.ToLower()) switch
         {
-            ("bookId", "asc") => db.Books.OrderBy( b => b.BookId),
-            ("bookId", "desc") => db.Books.OrderByDescending( b => b.BookId),
+            ("bookid", "asc") => db.Books.OrderBy( b => b.BookId),
+            ("bookid", "desc") => db.Books.OrderByDescending( b => b.BookId),
 
             ("name", "asc") => db.Books.OrderBy( b => b.Name),
             ("name", "desc") => db.Books.OrderByDescending( b => b.Name),
@@ -66,26 +66,29 @@ public class BookServiceDb : IBookService
             ("published", "asc") => db.Books.OrderBy( b => b.Published),
             ("published", "desc") => db.Books.OrderByDescending( b => b.Published),
 
-            ("avgRating", "asc") => db.Books.OrderBy( b => b.AvgRating),
-            ("avgRating", "desc") => db.Books.OrderByDescending( b => b.AvgRating),
+            ("avgrating", "asc") => db.Books.OrderBy( b => b.AvgRating),
+            ("avgrating", "desc") => db.Books.OrderByDescending( b => b.AvgRating),
             _ => db.Books.OrderBy( b => b.Name)
 
         };
-        return query.ToPaged(page, pageSize, orderBy, direction);
+        return await query.ToPaged(page, pageSize, orderBy, direction);
     }
    
-   public Book GetBook(int id)      // get book by id
+   public Task<Book?> GetBookByIdAsync(int id)      // get book by id
     {
-        return db.Books.Include( m => m.Reviews).FirstOrDefault( b => b.BookId == id);
+        return db.Books
+            .Include( m => m.Reviews)
+            .FirstOrDefaultAsync( b => b.BookId == id);
     }
-    public Book GetBookByNameAndAuthor(string name, string author)
+    public Task<Book?> GetBookByNameAndAuthorAsync(string name, string author)
     {
-        return db.Books.FirstOrDefault( b => b.Name == name && b.Author == author);
+        return db.Books
+        .FirstOrDefaultAsync( b => b.Name == name && b.Author == author);
     }
 
-    public Book AddBook(Book b)     // add new book to Db
+    public async Task<Book?> AddBookAsync(Book b)     // add new book to Db
     {
-        var exists = GetBookByNameAndAuthor(b.Name, b.Author);
+        var exists = await GetBookByNameAndAuthorAsync(b.Name, b.Author);
         if(exists != null)
         {
             return null;
@@ -101,25 +104,25 @@ public class BookServiceDb : IBookService
             Availability = b.Availability,
         };
         db.Books.Add(book);
-        db.SaveChanges();
+        await db.SaveChangesAsync();
         return book;        // return book added for display + confirmation
     }
 
-    public bool DeleteBook(int id)
+    public async Task<bool> DeleteBookAsync(int id)
     {
-        var del = GetBook(id);
+        var del = await GetBookByIdAsync(id);
         if(del == null)
         {
             return false;
         }
         db.Books.Remove(del);
-        db.SaveChanges();
+        await db.SaveChangesAsync();
         return true;
     }
 
-    public Book UpdateBook(Book updated)
+    public async Task<Book?> UpdateBookAsync(Book updated)
     {
-        var book = GetBook(updated.BookId);        // verify book exists in Db 1st
+        var book = await GetBookByIdAsync(updated.BookId);        // verify book exists in Db 1st
         if(book == null)
         {
             return null;
@@ -131,11 +134,13 @@ public class BookServiceDb : IBookService
         book.Published = updated.Published;
         book.DateAdded = updated.DateAdded;
 
-        db.SaveChanges();
+        await db.SaveChangesAsync();
         return book;
     }
 
-    public IList<Book> SearchBooks(string queryName = null, string queryAuthor = null, string queryGenre = null, int? queryPublished = null)
+    public async Task<IList<Book>> SearchBooksAsync(
+        string? queryName = null, string? queryAuthor = null,
+        string? queryGenre = null, int? queryPublished = null)
     {
         queryName = queryName?.ToLower();
         queryAuthor = queryAuthor?.ToLower();
@@ -160,21 +165,21 @@ public class BookServiceDb : IBookService
             query = query.Where( b => b.Published == queryPublished.Value);
         }
 
-        return query.OrderBy( b => b.Name).ToList();
+        return await query.OrderBy( b => b.Name).ToListAsync();
     }
 
 
     // --------------------------- REVIEW MANAGEMENT --------------------
 
-    public Review GetReview(int id)
+    public Task<Review?> GetReviewByIdAsync(int id)
     {
         // returns reviews and assoc movie or null if not found
-        return db.Reviews.Include( r => r.Book).FirstOrDefault( r => r.BookId == id );
+        return db.Reviews.Include( r => r.Book).FirstOrDefaultAsync( r => r.BookId == id );
     }
 
-    public Review CreateReview(int bookId, string comment, int rating)
+    public async Task<Review?> CreateReviewAsync(int bookId, string comment, int rating)
     {
-        var book = GetBook(bookId);
+        var book = await GetBookByIdAsync(bookId);
         if (book == null) return null;
 
         var review = new Review
@@ -186,53 +191,53 @@ public class BookServiceDb : IBookService
         };
 
         db.Reviews.Add(review);
-        db.SaveChanges();
+        await db.SaveChangesAsync();
         return review;
     }
 
-    public Review UpdateReview(int id, string comment, int rating)
+    public async Task<Review?> UpdateReviewAsync(int id, string comment, int rating)
     {
-        var review = GetReview(id);
+        var review = await GetReviewByIdAsync(id);
         if(review == null) return null;
 
         review.Comment = comment;
         review.Rating = rating;
 
         db.Reviews.Update(review);
-        db.SaveChanges();
+        await db.SaveChangesAsync();
         return review;
     }
 
-    public bool DeleteReview(int id)
+    public async Task<bool> DeleteReviewAsync(int id)
     {
-        var review = GetReview(id);
+        var review = await GetReviewByIdAsync(id);
         if(review == null) return false;
 
         db.Reviews.Remove(review);
-        db.SaveChanges();
+        await db.SaveChangesAsync();
         return true; 
 
     }
 
-    public IList<Review> GetAllReviewsForBook(int bookId)
+    public async Task<IList<Review>> GetAllReviewsForBookAsync(int bookId)
     {
-        var reviews = db.Reviews.Where( r => r.BookId == bookId).ToList();
+        var reviews = await db.Reviews.Where( r => r.BookId == bookId).ToListAsync();
         return reviews;
     }
 
-    public Paged<Review> GetReviews(int page=1, int pageSize=10, string orderBy="createdOn", string direction="asc")
+    public async Task<Paged<Review>> GetReviewsAsync(int page=1, int pageSize=10, string orderBy="createdOn", string direction="asc")
     {
         var query = (orderBy.ToLower(), direction.ToLower()) switch
         {
-            ("revId", "asc") => db.Reviews.OrderBy( r => r.RevId),
-            ("revId", "desc") => db.Reviews.OrderByDescending( r => r.RevId),
-            ("createdOn", "asc") => db.Reviews.OrderBy( r => r.CreatedOn),
-            ("createdOn", "desc") => db.Reviews.OrderByDescending( r => r.CreatedOn),
+            ("revid", "asc") => db.Reviews.OrderBy( r => r.RevId),
+            ("revid", "desc") => db.Reviews.OrderByDescending( r => r.RevId),
+            ("createdon", "asc") => db.Reviews.OrderBy( r => r.CreatedOn),
+            ("createdon", "desc") => db.Reviews.OrderByDescending( r => r.CreatedOn),
             ("rating", "asc") => db.Reviews.OrderBy( r => r.Rating),
             ("rating", "desc") => db.Reviews.OrderByDescending( r => r.Rating),
             _ => db.Reviews.OrderBy( r => r.CreatedOn)
         };
-        return query.ToPaged(page, pageSize, orderBy, direction);
+        return await query.ToPaged(page, pageSize, orderBy, direction);
     }
 
 }
