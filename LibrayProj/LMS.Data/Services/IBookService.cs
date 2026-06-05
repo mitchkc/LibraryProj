@@ -8,9 +8,7 @@ namespace LMS.Data.Services;
 // This interface describes the operations that a BookService class should implement
 public interface IBookService
 {
-    void Initialise();
-        
-    // add suitable method definitions to implement assignment requirements      
+    void Initialise();    
 
     // ----------------------- BOOK MANAGEMENT -------------------------
     Task<List<Book>> GetBooksAsync(string orderBy="id", string direction="asc"); // other attributes to list by?

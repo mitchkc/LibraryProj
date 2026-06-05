@@ -14,7 +14,10 @@ namespace LMS.Data.Repositories
          // authentication store
         public DbSet<User> Users { get; set; }
         public DbSet<Book> Books { get; set; }
+        public DbSet<BookCopy> BookCopies { get; set; }
         public DbSet<Review> Reviews { get; set; }
+        public DbSet<Loan> Loans { get; set; }
+        public DbSet<OverdueCharge> OverdueCharges { get; set; }
         public DbSet<ForgotPassword> ForgotPasswords { get; set; }
         
         public DatabaseContext(DbContextOptions<DatabaseContext> options) : base(options)

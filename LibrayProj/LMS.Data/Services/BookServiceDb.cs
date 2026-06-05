@@ -36,8 +36,8 @@ public class BookServiceDb : IBookService
             ("genre","asc") => db.Books.OrderBy( r => r.Genre),
             ("genre","desc") => db.Books.OrderByDescending( r => r.Genre),
 
-            ("availability","desc") => db.Books.OrderByDescending(r => r.Availability),
-            ("availability","asc") => db.Books.OrderBy(r => r.Availability),
+            // ("availability","desc") => db.Books.OrderByDescending(r => r.Availability), // dependency injection from BookCopy
+            // ("availability","asc") => db.Books.OrderBy(r => r.Availability),
 
             ("published","asc") => db.Books.OrderBy(r => r.Published),
             ("published","desc") => db.Books.OrderByDescending(r => r.Published),
@@ -100,8 +100,6 @@ public class BookServiceDb : IBookService
             Genre = b.Genre,
             Synopsis = b.Synopsis,
             Published = b.Published,
-            DateAdded = b.DateAdded,
-            Availability = b.Availability,
         };
         db.Books.Add(book);
         await db.SaveChangesAsync();
@@ -132,7 +130,6 @@ public class BookServiceDb : IBookService
         book.Genre = updated.Genre;
         book.Synopsis= updated.Synopsis;
         book.Published = updated.Published;
-        book.DateAdded = updated.DateAdded;
 
         await db.SaveChangesAsync();
         return book;

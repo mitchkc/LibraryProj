@@ -22,6 +22,7 @@ builder.Services.AddDbContext<DatabaseContext>( options => {
 // Add Application Services to DI   
 builder.Services.AddTransient<IUserService,UserServiceDb>();
 builder.Services.AddTransient<IMailService,SmtpMailService>();
+builder.Services.AddTransient<ILoanService,LoanServiceDb>();
 
 var app = builder.Build();
 
