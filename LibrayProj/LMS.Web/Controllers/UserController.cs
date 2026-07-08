@@ -18,10 +18,14 @@ namespace LMS.Web.Controllers;
 public class UserController : BaseController
 {
     private readonly IConfiguration _config;
+
     private readonly IMailService _mailer;
+
+
     private readonly IUserService _svc;
 
     public UserController(IUserService svc, IConfiguration config, IMailService mailer)
+    
     {        
         _config = config;
         _mailer = mailer;
