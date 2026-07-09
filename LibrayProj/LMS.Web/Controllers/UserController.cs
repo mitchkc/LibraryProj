@@ -9,6 +9,9 @@ using LMS.Data.Entities;
 using LMS.Data.Services;
 using LMS.Data.Security;
 using LMS.Web.Models.User;
+using System.Net.Sockets;
+using System.Runtime.CompilerServices;
+using System.ComponentModel.Design;
 
 /**
  *  User Management Controller
@@ -39,6 +42,7 @@ public class UserController : BaseController
         var paged = _svc.GetUsers(page,size,order,direction);      
         return View(paged);
     }
+
 
     // HTTP GET - Display Login page
     public IActionResult Login()
@@ -71,6 +75,7 @@ public class UserController : BaseController
         return Redirect("/");
     }
 
+
     // HTTP GET - Display Register page
     public IActionResult Register()
     {
@@ -80,14 +85,14 @@ public class UserController : BaseController
     // HTTP POST - Register action
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult Register([Bind("Name,Email,Password,PasswordConfirm")] RegisterViewModel m)       
+    public IActionResult Register([Bind("Foreame,Surname,Password,PasswordConfirm,Role,Email,Address,Gender,DoB,ContactNumber")] RegisterViewModel m)       
     {
         if (!ModelState.IsValid)
         {
             return View(m);
         }
         // add user via service
-        var user = _svc.AddUser(m.Name, m.Email,m.Password, Role.guest);
+        var user = _svc.AddUser(m.Forename, m.Surname, m.Password, m.Role, m.Email, m.Address, m.Gender, m.DoB, m.ContactNumber);
         
         // check if error adding user and display warning
         if (user == null) {
@@ -99,17 +104,60 @@ public class UserController : BaseController
         return RedirectToAction(nameof(Login));
     }
 
+
+    [Authorize(Roles = "admin")]
+    public IActionResult Delete(int id)
+    {
+        var user = _svc.GetUser(id);
+
+        if (user == null)
+        {
+            Alert($"User {id} could not be deleted..", AlertType.danger);
+            return RedirectToAction(nameof(Index));
+        }
+
+        return View(user);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = "admin")]
+    public IActionResult DeleteConfirm(int UId)
+    {
+        Console.WriteLine($"Id = {UId}");
+        var delete = _svc.DeleteUser(UId);
+
+        if (delete)
+        {
+            Alert("User deleted", AlertType.success);
+        }
+        else
+        {
+            Alert("User could not be deleted", AlertType.warning);
+        }
+
+        return RedirectToAction(nameof(Index));
+    }
+
+
+
     // HTTP GET - Display Update profile page
     [Authorize]
     public IActionResult UpdateProfile()
     {
         // use BaseClass helper method to retrieve Id of signed in user 
-        var user = _svc.GetUser(User.GetSignedInUserId());
-        var profileViewModel = new ProfileViewModel { 
-            Id = user.Id, 
-            Name = user.Name, 
-            Email = user.Email,                 
-            Role = user.Role
+        var user = _svc.GetUser(User.GetUser());
+        var profileViewModel = new ProfileViewModel 
+        { 
+            UId = user.Id, 
+            Forename = user.Fornameame, 
+            Surname = user.Surname,
+            Role = user.Role,
+            Email = user.Email,   
+            Address = user.Address,
+            Gender = user.Gender,
+            DoB = user.DoB,
+            ContactNumber = user.ContactNumber            
         };
         return View(profileViewModel);
     }
@@ -118,22 +166,36 @@ public class UserController : BaseController
     [Authorize]
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> UpdateProfile([Bind("Id,Name,Email")] ProfileViewModel m)       
+    public async Task<IActionResult> UpdateProfile([Bind("UId,Foreame,Surname,Password,PasswordConfirm,Role,Email,Address,Gender,DoB,ContactNumber")] ProfileViewModel m)       
     {
-        var user = _svc.GetUser(m.Id);
+        var user = _svc.GetUser(m.UId);
         // check if form is invalid and redisplay
         if (!ModelState.IsValid || user == null)
         {
             return View(m);
         } 
 
+        // check if email in use
+        if(!_svc.IsEmailAvailable(m.Email, m.UId))
+        {
+            return View(m);
+        }
+
         // update user details and call service
-        user.Name = m.Name;
-        user.Email = m.Email; 
+        user.UId = m.UId;
+        user.Forename = m.Forename;
+        user.Surname = m.Surname;
+        user.Role = m.Role;
+        user.Email = m.Email;
+        user.Address = m.Address;
+        user.Gender = m.Gender;
+        user.DoB = m.DoB;
+        user.ContactNumber = m.ContactNumber; 
         var updated = _svc.UpdateUser(user);
 
         // check if error updating service
-        if (updated == null) {
+        if (updated == null) 
+        {
             Alert("There was a problem Updating. Please try again", AlertType.warning);
             return View(m);
         }
@@ -146,50 +208,6 @@ public class UserController : BaseController
         return RedirectToAction("Index","Home");
     }
 
-    // HTTP GET - Allow admin to update a User
-    [Authorize(Roles="admin")]
-    public IActionResult Update(int id)
-    {
-        // retrieve user 
-        var user = _svc.GetUser(id);
-        var profileViewModel = new ProfileViewModel { 
-            Id = user.Id, 
-            Name = user.Name, 
-            Email = user.Email,                 
-            Role = user.Role
-        };
-        return View(profileViewModel);
-    }
-
-    // HTTP POST - Update User action
-    [Authorize(Roles="admin")]
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public IActionResult Update([Bind("Id,Name,Email,Role")] ProfileViewModel m)       
-    {
-        var user = _svc.GetUser(m.Id);
-        // check if form is invalid and redisplay
-        if (!ModelState.IsValid || user == null)
-        {
-            return View(m);
-        } 
-
-        // update user details and call service
-        user.Name = m.Name;
-        user.Email = m.Email;
-        user.Role = m.Role;        
-        var updated = _svc.UpdateUser(user);
-
-        // check if error updating service
-        if (updated == null) {
-            Alert("There was a problem Updating. Please try again", AlertType.warning);
-            return View(m);
-        }
-
-        Alert("Successfully Updated User Account Details", AlertType.info);                       
-
-        return RedirectToAction("Index","User");
-    }
     
     // HTTP GET - Display update password page
     [Authorize]
@@ -197,8 +215,12 @@ public class UserController : BaseController
     {
         // use BaseClass helper method to retrieve Id of signed in user 
         var user = _svc.GetUser(User.GetSignedInUserId());
-        var passwordViewModel = new PasswordViewModel { 
-            Id = user.Id, 
+
+        if(user == null) return RedirectToAction("Login");
+
+        var passwordViewModel = new PasswordViewModel 
+        { 
+            UId = user.UId, 
             Password = user.Password, 
             PasswordConfirm = user.Password, 
         };
@@ -209,9 +231,9 @@ public class UserController : BaseController
     [Authorize]
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> UpdatePassword([Bind("Id,OldPassword,Password,PasswordConfirm")] PasswordViewModel m)       
+    public async Task<IActionResult> UpdatePassword([Bind("UId,OldPassword,Password,PasswordConfirm")] PasswordViewModel m)       
     {
-        var user = _svc.GetUser(m.Id);
+        var user = _svc.GetUser(m.UId);
         if (!ModelState.IsValid || user == null)
         {
             return View(m);
@@ -313,10 +335,10 @@ public class UserController : BaseController
 
     // Called by Remote Validation attribute on RegisterViewModel to verify email address is available
     [AcceptVerbs("GET", "POST")]
-    public IActionResult VerifyEmailAvailable(string email, int id)
+    public IActionResult VerifyEmailAvailable(string email, int UId)
     {
         // check if email is available, or owned by user with id 
-        if (!_svc.IsEmailAvailable(email,id))
+        if (!_svc.IsEmailAvailable(email, UId))
         {
             return Json($"A user with this email address {email} already exists.");
         }
@@ -346,9 +368,9 @@ public class UserController : BaseController
         // define user claims
         var claims = new ClaimsIdentity(new[]
         {
-            new Claim(ClaimTypes.Sid, user.Id.ToString()),
+            new Claim(ClaimTypes.Sid, user.UId.ToString()),
             new Claim(ClaimTypes.Email, user.Email),
-            new Claim(ClaimTypes.Name, user.Name),
+            new Claim(ClaimTypes.Name, $"{user.Forename} {user.Surname}"),
             new Claim(ClaimTypes.Role, user.Role.ToString())                              
         }, CookieAuthenticationDefaults.AuthenticationScheme);
 
