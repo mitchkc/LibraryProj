@@ -24,7 +24,6 @@ public class UserController : BaseController
 
     private readonly IMailService _mailer;
 
-
     private readonly IUserService _svc;
 
     public UserController(IUserService svc, IConfiguration config, IMailService mailer)
